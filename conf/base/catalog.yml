@@ -26,6 +26,21 @@ transactions:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/03_primary/transactions.parquet
 
+# ---------------------------------------------------------------------------
+# Feature quality
+# ---------------------------------------------------------------------------
+
+# Curated transactions: quality flags, robust (winsorised) columns,
+# explicit net/gross revenue and grouped countries.
+transactions_curated:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/03_primary/transactions_curated.parquet
+
+# Feature-quality validation report.
+feature_quality_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/feature_quality_report.json
+
 # Data-quality report produced by the validation node.
 data_quality_report:
   type: kedro_datasets.json.JSONDataset

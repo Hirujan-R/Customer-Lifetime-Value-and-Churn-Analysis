@@ -150,7 +150,8 @@ Containers: **Docker** · CI: **GitHub Actions**.
 │   └── 08_reporting/       # reports and summaries
 ├── src/customer_clv_churn/
 │   ├── pipelines/
-│   │   └── data_ingestion/ # download → parse → clean → validate → summarise
+│   │   ├── data_ingestion/ # download → parse → clean → validate → summarise
+│   │   └── data_quality/   # feature-quality curation (flags, winsorise, grouping)
 │   ├── pipeline_registry.py
 │   └── settings.py
 ├── tests/                  # mirror of src/ structure
@@ -213,6 +214,36 @@ quality checks            passed
 - coerce dtypes; parse `InvoiceDate`; de-duplicate;
 - derive `is_cancellation`, `is_return`, `line_revenue`, `invoice_month`;
 - validate schema, nulls and expected date range, raising on hard failures.
+
+### Feature-quality curation (`data_quality`)
+
+An EDA-driven layer sits between ingestion and feature engineering. It does
+**not** impute `customer_id` (its missingness is MNAR — anonymous vs identified
+customers — so exclusion, not imputation, is correct). Instead it:
+
+- removes the last residual administrative stock codes (`ADJUST`, `SP1002`,
+  `TEST001/002`) that survived the ingestion filter;
+- flags zero-price lines (`is_zero_price`) and defines `is_monetary_eligible`
+  so monetary aggregates are not distorted by freebies/service lines;
+- splits **net vs gross** revenue and quantifies returns
+  (`line_revenue_gross`, `return_value`);
+- winsorises the heavy tails (`quantity_winsorised`,
+  `line_revenue_winsorised`, `is_outlier`) rather than deleting genuine
+  high-value customers;
+- collapses long-tail countries into `country_grouped` (41 → 32);
+- validates `stock_code` format, non-negative prices and nulls via a gate.
+
+Reference run:
+
+```
+rows 808,641  (82 residual admin rows removed)
+zero-price lines        61
+outliers capped      2,277
+returns             17,878
+countries            41 → 32 grouped
+gross revenue   £17,376,870.09
+net revenue     £16,660,273.33   (gross − returns reconciles exactly)
+```
 
 ---
 
@@ -300,6 +331,7 @@ value of prioritisation.
 | ----- | ----------- | ------ |
 | 1 | Project scaffold (Kedro + uv + tooling) | ✅ done |
 | 2 | Data ingestion, cleaning, validation | ✅ done |
+| 2b | Feature-quality curation (flags, winsorise, grouping) | ✅ done |
 | 3 | Feature engineering + customer feature store | ⏳ next |
 | 4 | Recency baseline strategy | ⏳ |
 | 5 | Churn models (LogReg/RF/LightGBM) + calibration | ⏳ |

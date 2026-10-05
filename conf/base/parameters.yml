@@ -38,3 +38,30 @@ data_ingestion:
   expected:
     min_invoice_date: "2009-12-01"
     max_invoice_date: "2011-12-31"
+
+# ---------------------------------------------------------------------------
+# Feature-quality parameters
+# ---------------------------------------------------------------------------
+data_quality:
+  # Administrative stock codes that survived the ingestion filter.
+  residual_admin_stock_codes:
+    - "ADJUST"
+    - "ADJUST2"
+    - "SP1002"
+    - "TEST001"
+    - "TEST002"
+
+  # Cap the tails of heavy-distributed columns instead of dropping customers.
+  winsorise:
+    lower_quantile: 0.001
+    upper_quantile: 0.999
+
+  # Collapse long-tail countries so categorical models stay stable.
+  country_grouping:
+    min_transactions_per_country: 100
+    other_label: "Other"
+
+  # Expectations used by the curated-data validation node.
+  expected:
+    stock_code_pattern: "^[0-9]{5}[A-Z]{0,3}$"
+    max_invoice_date: "2011-12-31"
