@@ -19,6 +19,9 @@ def test_data_ingestion_pipeline_is_registered() -> None:
         "segmentation",
         "churn_modeling",
         "clv",
+        "prioritisation",
+        "explainability",
+        "recommendations",
     } <= set(pipelines)
     assert "__default__" in pipelines
     assert "transactions" in pipelines["data_ingestion"].all_outputs()
@@ -28,3 +31,6 @@ def test_data_ingestion_pipeline_is_registered() -> None:
     assert "segmentation_report" in pipelines["segmentation"].all_outputs()
     assert "churn_model_metrics" in pipelines["churn_modeling"].all_outputs()
     assert "customer_value_risk" in pipelines["clv"].all_outputs()
+    assert "retention_priorities" in pipelines["prioritisation"].all_outputs()
+    assert "explainability_report" in pipelines["explainability"].all_outputs()
+    assert "recommendations_report" in pipelines["recommendations"].all_outputs()

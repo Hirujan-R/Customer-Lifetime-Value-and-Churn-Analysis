@@ -35,6 +35,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "churn_model_metrics",
                     "churn_test_predictions",
                     "churn_feature_importance",
+                    "churn_model",
                 ],
                 name="train_churn_models_node",
             ),

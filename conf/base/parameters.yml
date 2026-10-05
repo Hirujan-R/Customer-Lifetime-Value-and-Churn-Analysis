@@ -205,3 +205,48 @@ clv:
     enabled: true
     tracking_uri: "file:./mlruns"
     experiment_name: "customer-clv-churn"
+
+# ---------------------------------------------------------------------------
+# Retention prioritisation
+# ---------------------------------------------------------------------------
+prioritisation:
+  budgets: [100, 250, 500, 1000]
+  high_value_quantile: 0.75
+  recency_threshold_days: 90
+
+# ---------------------------------------------------------------------------
+# Explainability (SHAP)
+# ---------------------------------------------------------------------------
+explainability:
+  id_columns: ["customer_id", "cohort_date"]
+  target: "churn"
+  exclude_features: ["future_revenue", "future_orders"]
+  top_factors: 5
+
+# ---------------------------------------------------------------------------
+# Retention recommendations
+# ---------------------------------------------------------------------------
+recommendations:
+  segment_actions:
+    Champions: "Reward loyalty; protect experience; drive referrals and upsell."
+    Loyal customers: "Maintain engagement with loyalty tiers and cross-sell."
+    High-value at risk: "Personalised high-touch retention offer and win-back."
+    New customers: "Second-purchase incentive and onboarding campaign."
+    Occasional buyers: "Value-oriented offers and bundles to build habit."
+    High-return customers: "Investigate product dissatisfaction; review customer experience."
+    Lost customers: "Low-cost win-back; deprioritise unless value is high."
+  risk_factor_actions:
+    recency_days: "Win-back outreach with a personalised offer."
+    n_orders: "Frequency incentive and second-purchase offer."
+    n_orders_90: "Re-engagement campaign to rebuild purchase habit."
+    n_orders_365: "Re-engagement campaign to rebuild purchase habit."
+    revenue_90: "Targeted offer to reactivate declining spend."
+    revenue_365: "Targeted offer to reactivate declining spend."
+    recent_revenue_share: "Reactivation offer for lapsing spend."
+    avg_interval: "Replenishment reminders and product bundles."
+    return_value_ratio: "Investigate product dissatisfaction; recommend alternatives."
+    is_single_purchase: "Onboarding and second-purchase incentive."
+    tenure_days: "Onboarding and second-purchase incentive."
+    purchase_frequency: "Loyalty tier and cross-sell programme."
+    product_diversity: "Personalised recommendations to broaden the basket."
+  default_action: "Include in the next retention test; monitor."

@@ -92,7 +92,7 @@ def test_split_churn_data_uses_time_cohorts() -> None:
 def test_train_churn_models_outputs() -> None:
     model_input = _make_model_input()
     train, validation, test = split_churn_data(model_input, PARAMS)
-    metrics, predictions, importance = train_churn_models(train, validation, test, PARAMS)
+    metrics, predictions, importance, model = train_churn_models(train, validation, test, PARAMS)
 
     assert metrics["chosen_model"] in PARAMS["models"]
     assert 0.0 <= metrics["final_test_metrics"]["roc_auc"] <= 1.0
@@ -102,6 +102,7 @@ def test_train_churn_models_outputs() -> None:
     assert predictions["churn_probability"].between(0, 1).all()
     assert set(predictions["churn_prediction"]).issubset({0, 1})
     assert not importance.empty
+    assert hasattr(model, "predict_proba")
     assert {"top_10pct", "top_20pct"} <= set(metrics["business_metrics"])
     assert {"test_brier_raw", "test_brier_calibrated"} <= set(metrics["calibration_effect"])
 

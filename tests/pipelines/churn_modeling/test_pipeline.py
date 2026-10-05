@@ -22,6 +22,7 @@ def test_pipeline_has_expected_nodes_and_outputs() -> None:
         "churn_model_metrics",
         "churn_test_predictions",
         "churn_feature_importance",
+        "churn_model",
         "survival_curves",
         "survival_report",
     ):

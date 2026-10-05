@@ -18,6 +18,9 @@ ingest: ## Run the data ingestion pipeline
 run: ## Run the full default pipeline
 	$(UV) run kedro run
 
+dashboard: ## Launch the C-suite Streamlit dashboard
+	$(UV) run streamlit run src/customer_clv_churn/dashboard/app.py
+
 test: ## Run the test suite
 	$(UV) run pytest
 

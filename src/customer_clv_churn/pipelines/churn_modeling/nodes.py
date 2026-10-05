@@ -303,7 +303,9 @@ def train_churn_models(
         params: Churn-modelling config.
 
     Returns:
-        ``(metrics, test_predictions, feature_importance)``.
+        ``(metrics, test_predictions, feature_importance, base_model)`` where
+        ``base_model`` is the fitted uncalibrated pipeline (used downstream for
+        SHAP explanations).
     """
     target = params["target"]
     id_columns = set(params.get("id_columns", ["customer_id", "cohort_date"]))
@@ -429,7 +431,7 @@ def train_churn_models(
         final_metrics["brier"],
         final_metrics["expected_calibration_error"],
     )
-    return metrics, predictions, importance
+    return metrics, predictions, importance, best_pipeline
 
 
 def _log_to_mlflow(

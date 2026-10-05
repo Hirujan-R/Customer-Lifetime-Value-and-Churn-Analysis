@@ -149,6 +149,11 @@ churn_feature_importance:
   save_args:
     index: false
 
+# Fitted (uncalibrated) churn pipeline, used for SHAP explanations.
+churn_model:
+  type: kedro_datasets.pickle.PickleDataset
+  filepath: data/06_models/churn_model.pkl
+
 # Survival analysis (exploratory).
 survival_curves:
   type: kedro_datasets.pandas.CSVDataset
@@ -189,3 +194,36 @@ customer_value_risk:
 revenue_at_risk_summary:
   type: kedro_datasets.json.JSONDataset
   filepath: data/08_reporting/revenue_at_risk_summary.json
+
+# ---------------------------------------------------------------------------
+# Prioritisation, explainability and recommendations
+# ---------------------------------------------------------------------------
+
+# Customers ranked by expected revenue at risk.
+retention_priorities:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/07_model_output/retention_priorities.parquet
+prioritisation_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/prioritisation_report.json
+
+# SHAP global importance, per-customer risk factors and report.
+shap_global_importance:
+  type: kedro_datasets.pandas.CSVDataset
+  filepath: data/08_reporting/shap_global_importance.csv
+  save_args:
+    index: false
+customer_risk_factors:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/07_model_output/customer_risk_factors.parquet
+explainability_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/explainability_report.json
+
+# Per-customer retention recommendations and executive action list.
+customer_recommendations:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/07_model_output/customer_recommendations.parquet
+recommendations_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/recommendations_report.json

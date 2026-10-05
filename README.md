@@ -156,9 +156,13 @@ Containers: **Docker** · CI: **GitHub Actions**.
 │   │   ├── baseline/            # naive 90-day recency rule + evaluation
 │   │   ├── segmentation/        # clustering + rule-based segment comparison
 │   │   ├── churn_modeling/      # multi-cohort models, calibration, survival
-│   │   └── clv/                 # CLV regression + revenue-at-risk
+│   │   ├── clv/                 # CLV regression + revenue-at-risk
+│   │   ├── prioritisation/      # value-weighted retention ranking + strategy comparison
+│   │   ├── explainability/      # SHAP global / customer / segment risk factors
+│   │   └── recommendations/     # segment + risk-factor -> retention actions
 │   ├── pipeline_registry.py
-│   └── settings.py
+│   ├── settings.py
+│   └── dashboard/               # C-suite Streamlit app (5 pages)
 ├── tests/                  # mirror of src/ structure
 ├── pyproject.toml          # deps, tooling (uv)
 ├── uv.lock                 # reproducible environment
@@ -435,6 +439,84 @@ predicted / mean actual ≈ 0.56), so totals are conservative lower bounds.
 Outputs: `customer_value_risk`, `clv_model_metrics.json`,
 `clv_feature_importance.csv`, `revenue_at_risk_summary.json`, and an MLflow run.
 
+### 6.5b Prioritisation engine — implemented
+
+The `prioritisation` pipeline ranks customers by **expected revenue at risk**
+and compares that ranking against naive alternatives at realistic budgets. This
+operationalises the core insight: the highest-probability churner is not the best
+retention investment.
+
+Reference result (test cohort, revenue at risk captured at each budget):
+
+| Strategy | Top 100 | Top 250 | Top 500 | Top 1,000 |
+| -------- | ------- | ------- | ------- | --------- |
+| Recency rule (naive) | £5,341 | £12,034 | £21,768 | £55,004 |
+| Churn probability only | £1,233 | £3,206 | £14,983 | £54,295 |
+| Expected CLV only | £73,331 | £123,511 | £215,822 | £382,750 |
+| **Revenue at risk (recommended)** | **£138,473** | **£228,431** | **£336,884** | **£498,528** |
+
+At a budget of 100 customers, value-weighted prioritisation captures **24.9×
+more** revenue at risk than the recency rule and **112× more** than ranking by
+churn probability alone. The full recency rule targets 63% of customers to
+capture £468k, whereas the ML ranking captures more with 500. The report also
+exposes `target_top_100/250/500/1000` flags so the engine answers *"if we can
+only target N customers, who?"*.
+
+### 6.6b Explainability and risk factors — implemented
+
+The `explainability` pipeline explains the churn model with **SHAP** for all
+5,224 scored customers (81 features):
+
+- **Global** top drivers: `n_orders_365`, `revenue_365`, `active_month_ratio`,
+  `purchase_frequency`, `recency_days`.
+- **Per customer**: top-5 risk factors with direction (↑ increases risk / ↓
+  decreases risk) and SHAP value.
+- **Per segment** aggregated risk factors (e.g. Champions and New customers are
+  both driven by `n_orders_365` and `active_months`).
+
+SHAP attributions are **predictive/correlational**, not causal.
+
+### 6.7b Retention recommendations — implemented
+
+The `recommendations` pipeline maps each customer's segment and dominant SHAP
+risk factor to a recommended action, then aggregates an executive action list
+ranked by potential CLV at risk:
+
+| Action (top entries) | Customers | Potential CLV at risk |
+| -------------------- | --------- | --------------------- |
+| Re-engagement campaign to rebuild purchase habit | 2,313 | £479,273 |
+| Targeted offer to reactivate declining spend | 1,192 | £165,024 |
+| Value-oriented offers and bundles | 684 | £106,923 |
+| Reward loyalty; protect experience | 346 | £77,280 |
+| Win-back outreach | 225 | £41,061 |
+
+**Caveat:** the data is observational — these are prioritised hypotheses. A/B
+testing or causal experimentation is required to estimate the actual treatment
+effect of each intervention; no recovered revenue is claimed.
+
+### 6.8 C-suite dashboard — implemented
+
+A five-page Streamlit app designed for senior management:
+
+1. **Executive Overview** — KPIs (total/active customers, customers at risk,
+   revenue at risk, future CLV at risk, high-value customers at risk), risk
+   distribution, revenue at risk by segment, top customers, and management focus.
+2. **Customer Segmentation** — segment size/revenue/CLV/churn/revenue at risk,
+   with per-segment characteristics, SHAP risk factors and intervention.
+3. **Churn Risk** — searchable/filterable customer table; select a customer for
+   profile, churn probability, CLV, revenue at risk, SHAP explanation and action.
+4. **Revenue Impact** — baseline vs ML at a selectable retention budget, with the
+   prioritised customer list and segment mix.
+5. **Recommended Actions** — the executive action list with counts and potential
+   CLV at risk.
+
+Run it with:
+
+```bash
+uv run streamlit run src/customer_clv_churn/dashboard/app.py
+# or: make dashboard
+```
+
 ### 6.2 Baseline (current company strategy)
 
 A recency rule: *"no purchase for > 90 days ⇒ at risk ⇒ generic retention
@@ -509,11 +591,12 @@ value of prioritisation.
 | 5 | Churn models (LogReg/RF/LightGBM) + calibration | ✅ done |
 | 6 | CLV model | ✅ done |
 | 7 | Segmentation | ✅ done |
-| 8 | Revenue-at-risk + prioritisation engine | ⏳ next |
-| 9 | SHAP explainability layer | ⏳ |
-| 10 | FastAPI inference service | ⏳ |
-| 11 | Streamlit C-suite dashboard (5 pages) | ⏳ |
-| 12 | MLflow tracking, DVC datasets, Docker, CI | ⏳ |
+| 8 | Revenue-at-risk + prioritisation engine | ✅ done |
+| 9 | SHAP explainability layer | ✅ done |
+| 9b | Retention recommendations | ✅ done |
+| 10 | FastAPI inference service | ⏳ next |
+| 11 | Streamlit C-suite dashboard (5 pages) | ✅ done |
+| 12 | MLflow tracking, DVC datasets, Docker, CI | ⏳ (MLflow done) |
 | 13 | Extension: IBM Telco (subscription churn) | ⏳ |
 
 ---
