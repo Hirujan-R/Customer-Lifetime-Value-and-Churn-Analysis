@@ -150,8 +150,10 @@ Containers: **Docker** · CI: **GitHub Actions**.
 │   └── 08_reporting/       # reports and summaries
 ├── src/customer_clv_churn/
 │   ├── pipelines/
-│   │   ├── data_ingestion/ # download → parse → clean → validate → summarise
-│   │   └── data_quality/   # feature-quality curation (flags, winsorise, grouping)
+│   │   ├── data_ingestion/      # download → parse → clean → validate → summarise
+│   │   ├── data_quality/        # feature-quality curation (flags, winsorise, grouping)
+│   │   ├── feature_engineering/ # customer feature store + churn labels
+│   │   └── baseline/            # naive 90-day recency rule + evaluation
 │   ├── pipeline_registry.py
 │   └── settings.py
 ├── tests/                  # mirror of src/ structure
@@ -263,6 +265,47 @@ Customer-level features across four families:
 
 Target: ~30–50 meaningful, business-interpretable features (no feature bloat).
 
+### 6.1b Feature store & temporal split (implemented)
+
+The `feature_engineering` pipeline turns transactions into a customer feature
+store using a strict observation → performance split:
+
+```
+observation window (≤ T)            performance window (T, T+90]
+features computed here              churn = no purchase here
+        |----------------------------------|-----|------------------|
+     Dec 2009                        T = 2011-06-09              2011-09-07
+```
+
+- `customer_features` — **50 features** per eligible customer, observation-only
+  (RFM, rolling 30/90/180/365-day activity, intervals and their volatility,
+  product diversity, return/cancellation rates, growth and momentum ratios,
+  recency-to-interval ratio, trend slope, grouped country).
+- `churn_labels` — `churn` (no purchase in the 90-day performance window) plus
+  observed `future_revenue` / `future_orders`, used for evaluation.
+
+Reference run: **4,941 customers, 67.7% 90-day churn**. A test explicitly
+asserts that performance-window purchases never leak into the features.
+
+### 6.1c Baseline (current company strategy) — implemented
+
+The `baseline` pipeline encodes the rule *"inactive > 90 days ⇒ at risk"* and
+evaluates it against the held-out labels. Value is proxied as 12 × observed
+monthly net revenue (annualised run-rate) until the CLV model lands.
+
+Reference result at cutoff `2011-06-09`:
+
+| Metric | Baseline (recency > 90d) |
+| ------ | ------------------------ |
+| Customers targeted | 2,959 / 4,941 (59.9%) |
+| Precision / recall / F1 | 0.833 / 0.738 / 0.783 |
+| False positives / false negatives | 493 / 877 |
+| Historical revenue targeted | £3,153,608 |
+| Potential revenue protected (proxy) | £2,144,325 |
+
+This is the bar the ML strategy must beat — not just on F1, but on the
+**value** of the customers it prioritises.
+
 ### 6.2 Baseline (current company strategy)
 
 A recency rule: *"no purchase for > 90 days ⇒ at risk ⇒ generic retention
@@ -332,9 +375,9 @@ value of prioritisation.
 | 1 | Project scaffold (Kedro + uv + tooling) | ✅ done |
 | 2 | Data ingestion, cleaning, validation | ✅ done |
 | 2b | Feature-quality curation (flags, winsorise, grouping) | ✅ done |
-| 3 | Feature engineering + customer feature store | ⏳ next |
-| 4 | Recency baseline strategy | ⏳ |
-| 5 | Churn models (LogReg/RF/LightGBM) + calibration | ⏳ |
+| 3 | Feature engineering + customer feature store | ✅ done |
+| 4 | Recency baseline strategy | ✅ done |
+| 5 | Churn models (LogReg/RF/LightGBM) + calibration | ⏳ next |
 | 6 | CLV model | ⏳ |
 | 7 | Segmentation | ⏳ |
 | 8 | Revenue-at-risk + prioritisation engine | ⏳ |

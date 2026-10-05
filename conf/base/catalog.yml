@@ -54,3 +54,31 @@ transactions_summary:
     parse_dates: false
   save_args:
     index: false
+
+# ---------------------------------------------------------------------------
+# Feature engineering
+# ---------------------------------------------------------------------------
+
+# Customer-level feature store (one row per eligible customer, observation-only).
+customer_features:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/04_feature/customer_features.parquet
+
+# Temporally-held-out churn labels and observed future value.
+churn_labels:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/churn_labels.parquet
+
+# ---------------------------------------------------------------------------
+# Baseline (current company strategy)
+# ---------------------------------------------------------------------------
+
+# Per-customer baseline targeting scores.
+baseline_scores:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/07_model_output/baseline_scores.parquet
+
+# Baseline evaluation report (business + classification metrics).
+baseline_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/baseline_report.json

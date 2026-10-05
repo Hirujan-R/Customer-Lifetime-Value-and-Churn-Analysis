@@ -11,8 +11,9 @@ configure_project("customer_clv_churn")
 
 def test_data_ingestion_pipeline_is_registered() -> None:
     pipelines = register_pipelines()
-    assert "data_ingestion" in pipelines
-    assert "data_quality" in pipelines
+    assert {"data_ingestion", "data_quality", "feature_engineering", "baseline"} <= set(pipelines)
     assert "__default__" in pipelines
     assert "transactions" in pipelines["data_ingestion"].all_outputs()
     assert "transactions_curated" in pipelines["data_quality"].all_outputs()
+    assert "customer_features" in pipelines["feature_engineering"].all_outputs()
+    assert "baseline_report" in pipelines["baseline"].all_outputs()

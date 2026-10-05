@@ -65,3 +65,21 @@ data_quality:
   expected:
     stock_code_pattern: "^[0-9]{5}[A-Z]{0,3}$"
     max_invoice_date: "2011-12-31"
+
+# ---------------------------------------------------------------------------
+# Temporal design (observation -> prediction -> performance)
+# ---------------------------------------------------------------------------
+temporal:
+  # Prediction point T. Features use transactions <= T only.
+  cutoff_date: "2011-06-09"
+  # Churn = no purchase in (T, T + performance_window_days].
+  performance_window_days: 90
+  # Rolling activity windows relative to T.
+  recent_windows: [30, 90, 180, 365]
+
+# ---------------------------------------------------------------------------
+# Baseline (current / naive company strategy)
+# ---------------------------------------------------------------------------
+baseline:
+  # "At risk" if no purchase for more than this many days at the cutoff.
+  inactivity_days: 90
