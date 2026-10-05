@@ -158,3 +158,34 @@ survival_curves:
 survival_report:
   type: kedro_datasets.json.JSONDataset
   filepath: data/08_reporting/survival_report.json
+
+# ---------------------------------------------------------------------------
+# Customer lifetime value
+# ---------------------------------------------------------------------------
+
+# CLV model evaluation metrics.
+clv_model_metrics:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/clv_model_metrics.json
+
+# Predicted 90-day value per customer in the test cohort.
+clv_test_predictions:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/07_model_output/clv_test_predictions.parquet
+
+# CLV feature importance.
+clv_feature_importance:
+  type: kedro_datasets.pandas.CSVDataset
+  filepath: data/08_reporting/clv_feature_importance.csv
+  save_args:
+    index: false
+
+# Per-customer CLV and revenue at risk.
+customer_value_risk:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/07_model_output/customer_value_risk.parquet
+
+# Revenue-at-risk summary.
+revenue_at_risk_summary:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/revenue_at_risk_summary.json

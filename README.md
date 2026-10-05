@@ -155,7 +155,8 @@ Containers: **Docker** · CI: **GitHub Actions**.
 │   │   ├── feature_engineering/ # customer feature store + churn labels
 │   │   ├── baseline/            # naive 90-day recency rule + evaluation
 │   │   ├── segmentation/        # clustering + rule-based segment comparison
-│   │   └── churn_modeling/      # multi-cohort models, calibration, survival
+│   │   ├── churn_modeling/      # multi-cohort models, calibration, survival
+│   │   └── clv/                 # CLV regression + revenue-at-risk
 │   ├── pipeline_registry.py
 │   └── settings.py
 ├── tests/                  # mirror of src/ structure
@@ -342,24 +343,42 @@ train (5 earlier cohorts)  ->  validation (2011-08)  ->  test (2011-09)
    23,924 rows                    5,117 rows              5,224 rows
 ```
 
-Models: **logistic regression, random forest and LightGBM**. The best model by
-validation PR-AUC is calibrated on the validation cohort (isotonic / Platt), and
-calibration is only *applied* if it improves validation calibration. Everything
-is tracked in **MLflow** (`mlruns/`).
+Models: **logistic regression, random forest and LightGBM**. The winner is
+chosen on the **validation cohort only** (never test) by PR-AUC, then calibrated
+on the validation cohort. Everything is tracked in **MLflow** (`mlruns/`).
 
-Reference result (test cohort):
+**Model selection — validation PR-AUC decides the winner, test is reported only:**
+
+| Model | Validation PR-AUC | Test PR-AUC |
+| ----- | ----------------- | ----------- |
+| Logistic Regression | 0.8624 | 0.8170 |
+| **Random Forest (selected)** | **0.9079** | 0.8243 |
+| LightGBM | 0.9030 | 0.8248 |
+
+Random Forest wins on validation and is therefore selected. LightGBM's **test**
+PR-AUC is marginally higher (0.8248 vs 0.8243 — a 0.0005 difference, i.e. noise),
+but **test is never used for selection** (that would be leakage / overfitting to
+the holdout). The model is picked on validation, then reported on test.
+
+**Selected + calibrated model — test-cohort metrics:**
 
 | Model | ROC-AUC | PR-AUC | Precision | Recall | F1 | Brier |
 | ----- | ------- | ------ | --------- | ------ | -- | ----- |
-| Logistic Regression | 0.802 | 0.817 | — | — | 0.775 | 0.176 |
-| Random Forest | 0.809 | 0.824 | — | — | 0.794 | 0.176 |
-| LightGBM | 0.815 | 0.825 | — | — | 0.796 | 0.174 |
-| **Selected + calibrated (RF)** | 0.809 | 0.816 | 0.730 | 0.871 | 0.794 | 0.177 |
+| Selected + calibrated (Random Forest) | 0.809 | 0.816 | 0.730 | 0.871 | 0.794 | 0.177 |
+
+Note the calibrated PR-AUC (0.816) is slightly **below** the raw RF PR-AUC
+(0.824). Isotonic calibration is monotonic but maps probabilities into flat
+segments, creating ties that slightly reduce rank-based metrics (ROC-AUC /
+PR-AUC). Calibration optimises *probability accuracy*, not *ranking* — it is
+applied here because the probabilities are multiplied by CLV downstream. It
+improved validation Brier (0.1383 → 0.1341), the criterion used to apply it;
+on the later test cohort it was neutral/slightly worse (0.1762 → 0.1773) due to
+cohort shift, which the pipeline reports honestly.
 
 Business: targeting the top 10% by probability captures **15.7% of all
-churners at 90.0% precision (1.57× lift)**. Probability calibration matters here
-because these probabilities are multiplied by CLV downstream; the pipeline
-reports `calibration_applied`, Brier and expected calibration error.
+churners at 90.0% precision (1.57× lift)**. The pipeline emits
+`calibration_applied`, Brier and expected calibration error alongside the ranking
+metrics.
 
 Survival analysis (exploratory): Kaplan–Meier curves by segment plus a Cox
 proportional-hazards model — median time-to-churn 239 days, concordance 0.85,
@@ -368,6 +387,53 @@ with recency increasing and order frequency decreasing churn hazard.
 Outputs: `churn_test_predictions`, `churn_feature_importance.csv`,
 `churn_model_metrics.json`, `survival_report.json`, `survival_curves.csv`, and an
 MLflow run.
+
+### 6.4b CLV and revenue-at-risk — implemented
+
+The `clv` pipeline trains a supervised regression on the **same temporal panel**
+to predict net revenue in the next 90 days, then combines it with the calibrated
+churn probability to estimate CLV and revenue at risk.
+
+Models: Ridge, Random Forest and LightGBM (Tweedie objective for zero-inflated
+revenue). Selected by validation MAE. Reference result (test cohort):
+
+| Model | MAE | RMSE | R² | Spearman | Top-decile value capture |
+| ----- | --- | ---- | -- | -------- | ------------------------ |
+| Ridge | 394.84 | 1,767.72 | 0.674 | 0.438 | 0.58 |
+| Random Forest | 351.29 | 1,671.38 | 0.709 | 0.570 | 0.60 |
+| **LightGBM (selected)** | **340.94** | 1,693.06 | 0.701 | 0.597 | 0.60 |
+
+It clearly separates **observed** from **modelled** value:
+
+| Quantity | Provenance |
+| -------- | ---------- |
+| `historical_value` | observed (observation window) |
+| `predicted_90d_value` | modelled |
+| `expected_future_clv` | modelled (horizon formula) |
+| `revenue_at_risk` | modelled = `P(churn) × expected_future_clv` |
+| `actual_future_revenue` | observed (held-out; not available at scoring time) |
+
+**CLV assumptions** (explicit): 90-day-ahead revenue is modelled from
+observation features only; value per active 90-day period is stationary
+(`v = predicted_90d / retention_probability`); per-period retention equals
+`1 − calibrated churn probability`; horizon = 365 days; no margin/inflation.
+Revenue at risk uses the spec's definition `P(churn) × expected_future_clv`.
+
+Reference portfolio (test cohort, 5,224 customers, 365-day horizon):
+
+```
+mean churn probability       0.624
+total historical value       £13,327,588  (observed)
+total predicted 90-day value  £1,509,250  (modelled)
+total expected future CLV     £6,100,763  (modelled)
+total revenue at risk           £960,359  (modelled)
+top 10% of customers hold 36.0% of all revenue at risk
+```
+
+Caveat: like most revenue models, the extreme tail is under-predicted (mean
+predicted / mean actual ≈ 0.56), so totals are conservative lower bounds.
+Outputs: `customer_value_risk`, `clv_model_metrics.json`,
+`clv_feature_importance.csv`, `revenue_at_risk_summary.json`, and an MLflow run.
 
 ### 6.2 Baseline (current company strategy)
 
@@ -441,9 +507,9 @@ value of prioritisation.
 | 3 | Feature engineering + customer feature store | ✅ done |
 | 4 | Recency baseline strategy | ✅ done |
 | 5 | Churn models (LogReg/RF/LightGBM) + calibration | ✅ done |
-| 6 | CLV model | ⏳ next |
+| 6 | CLV model | ✅ done |
 | 7 | Segmentation | ✅ done |
-| 8 | Revenue-at-risk + prioritisation engine | ⏳ |
+| 8 | Revenue-at-risk + prioritisation engine | ⏳ next |
 | 9 | SHAP explainability layer | ⏳ |
 | 10 | FastAPI inference service | ⏳ |
 | 11 | Streamlit C-suite dashboard (5 pages) | ⏳ |

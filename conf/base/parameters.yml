@@ -170,3 +170,38 @@ churn_modeling:
     enabled: true
     tracking_uri: "file:./mlruns"
     experiment_name: "customer-clv-churn"
+
+# ---------------------------------------------------------------------------
+# Customer lifetime value
+# ---------------------------------------------------------------------------
+clv:
+  # Target: observed net revenue in the 90-day performance window.
+  target: "future_revenue"
+  id_columns: ["customer_id", "cohort_date"]
+  categorical_features: ["country_grouped"]
+  exclude_features: ["churn", "future_orders"]
+  models: ["ridge", "random_forest", "lightgbm"]
+  model_params:
+    ridge:
+      alpha: 1.0
+    random_forest:
+      n_estimators: 300
+      min_samples_leaf: 5
+    lightgbm:
+      n_estimators: 400
+      learning_rate: 0.05
+      num_leaves: 31
+      subsample: 0.8
+      colsample_bytree: 0.8
+      objective: "tweedie"
+      tweedie_variance_power: 1.5
+  selection_metric: "mae"
+  random_state: 42
+  # CLV horizon and assumptions.
+  horizon_days: 365
+  discount_rate_annual: 0.0
+  min_retention_probability: 0.1
+  mlflow:
+    enabled: true
+    tracking_uri: "file:./mlruns"
+    experiment_name: "customer-clv-churn"
