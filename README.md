@@ -153,7 +153,8 @@ Containers: **Docker** · CI: **GitHub Actions**.
 │   │   ├── data_ingestion/      # download → parse → clean → validate → summarise
 │   │   ├── data_quality/        # feature-quality curation (flags, winsorise, grouping)
 │   │   ├── feature_engineering/ # customer feature store + churn labels
-│   │   └── baseline/            # naive 90-day recency rule + evaluation
+│   │   ├── baseline/            # naive 90-day recency rule + evaluation
+│   │   └── segmentation/        # clustering + rule-based segment comparison
 │   ├── pipeline_registry.py
 │   └── settings.py
 ├── tests/                  # mirror of src/ structure
@@ -306,6 +307,29 @@ Reference result at cutoff `2011-06-09`:
 This is the bar the ML strategy must beat — not just on F1, but on the
 **value** of the customers it prioritises.
 
+### 6.6b Segmentation — implemented
+
+The `segmentation` pipeline clusters customers on **observation features only**
+(the churn label is never used to form segments), selecting the best model by
+silhouette across K-Means, Gaussian Mixture and Agglomerative models, then
+interpreting and profiling the clusters and comparing them to an interpretable
+RFM rule-based segmentation.
+
+Reference run: best model **K-Means, k=3 (silhouette 0.30)**.
+
+| Segment | Customers | Net revenue | Avg value proxy | Observed churn | Revenue at risk (proxy) |
+| ------- | --------- | ----------- | --------------- | -------------- | ----------------------- |
+| Champions | 1,870 (37.9%) | £10,068,594 | £4,303 | 43.2% | £1,985,223 |
+| Occasional buyers | 2,628 (53.2%) | £1,344,950 | £588 | 86.8% | £1,287,110 |
+| New customers | 443 (9.0%) | £240,590 | £3,538 | 57.6% | £780,834 |
+
+The rule-based comparison surfaces the small high-value cohorts that pure
+clustering merges away — e.g. **High-value at risk** (117 customers, £221k at
+risk) and **High-return customers** (34), which get their own strategies.
+Outputs: `customer_segments`, `segment_profiles.csv`, `rule_segment_profiles.csv`,
+`segmentation_report.json`. As models land, `observed_churn_rate` is replaced by
+the calibrated churn probability.
+
 ### 6.2 Baseline (current company strategy)
 
 A recency rule: *"no purchase for > 90 days ⇒ at risk ⇒ generic retention
@@ -379,7 +403,7 @@ value of prioritisation.
 | 4 | Recency baseline strategy | ✅ done |
 | 5 | Churn models (LogReg/RF/LightGBM) + calibration | ⏳ next |
 | 6 | CLV model | ⏳ |
-| 7 | Segmentation | ⏳ |
+| 7 | Segmentation | ✅ done |
 | 8 | Revenue-at-risk + prioritisation engine | ⏳ |
 | 9 | SHAP explainability layer | ⏳ |
 | 10 | FastAPI inference service | ⏳ |

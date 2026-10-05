@@ -82,3 +82,36 @@ baseline_scores:
 baseline_report:
   type: kedro_datasets.json.JSONDataset
   filepath: data/08_reporting/baseline_report.json
+
+# ---------------------------------------------------------------------------
+# Segmentation
+# ---------------------------------------------------------------------------
+
+# Per-customer cluster assignment and rule-based segment.
+customer_segments:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/07_model_output/customer_segments.parquet
+
+# Segment model-selection report.
+segmentation_model_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/segmentation_model_report.json
+
+# Segment profiles (business metrics per segment).
+segment_profiles:
+  type: kedro_datasets.pandas.CSVDataset
+  filepath: data/08_reporting/segment_profiles.csv
+  save_args:
+    index: false
+
+# Rule-based (RFM) segment profiles, for comparison with the clusters.
+rule_segment_profiles:
+  type: kedro_datasets.pandas.CSVDataset
+  filepath: data/08_reporting/rule_segment_profiles.csv
+  save_args:
+    index: false
+
+# Full segmentation report (profiles + characteristics + recommendations).
+segmentation_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/segmentation_report.json
