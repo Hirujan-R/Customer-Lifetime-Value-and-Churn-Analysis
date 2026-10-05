@@ -115,3 +115,46 @@ rule_segment_profiles:
 segmentation_report:
   type: kedro_datasets.json.JSONDataset
   filepath: data/08_reporting/segmentation_report.json
+
+# ---------------------------------------------------------------------------
+# Churn modelling
+# ---------------------------------------------------------------------------
+
+# Multi-cohort panel modelling table.
+churn_model_input:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/churn_model_input.parquet
+
+# Time-based splits.
+train_data:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/train_data.parquet
+validation_data:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/validation_data.parquet
+test_data:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/test_data.parquet
+
+# Evaluation outputs.
+churn_model_metrics:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/churn_model_metrics.json
+churn_test_predictions:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/07_model_output/churn_test_predictions.parquet
+churn_feature_importance:
+  type: kedro_datasets.pandas.CSVDataset
+  filepath: data/08_reporting/churn_feature_importance.csv
+  save_args:
+    index: false
+
+# Survival analysis (exploratory).
+survival_curves:
+  type: kedro_datasets.pandas.CSVDataset
+  filepath: data/08_reporting/survival_curves.csv
+  save_args:
+    index: false
+survival_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/survival_report.json

@@ -17,6 +17,7 @@ def test_data_ingestion_pipeline_is_registered() -> None:
         "feature_engineering",
         "baseline",
         "segmentation",
+        "churn_modeling",
     } <= set(pipelines)
     assert "__default__" in pipelines
     assert "transactions" in pipelines["data_ingestion"].all_outputs()
@@ -24,3 +25,4 @@ def test_data_ingestion_pipeline_is_registered() -> None:
     assert "customer_features" in pipelines["feature_engineering"].all_outputs()
     assert "baseline_report" in pipelines["baseline"].all_outputs()
     assert "segmentation_report" in pipelines["segmentation"].all_outputs()
+    assert "churn_model_metrics" in pipelines["churn_modeling"].all_outputs()

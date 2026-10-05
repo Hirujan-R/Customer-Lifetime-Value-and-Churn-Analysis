@@ -154,7 +154,8 @@ Containers: **Docker** · CI: **GitHub Actions**.
 │   │   ├── data_quality/        # feature-quality curation (flags, winsorise, grouping)
 │   │   ├── feature_engineering/ # customer feature store + churn labels
 │   │   ├── baseline/            # naive 90-day recency rule + evaluation
-│   │   └── segmentation/        # clustering + rule-based segment comparison
+│   │   ├── segmentation/        # clustering + rule-based segment comparison
+│   │   └── churn_modeling/      # multi-cohort models, calibration, survival
 │   ├── pipeline_registry.py
 │   └── settings.py
 ├── tests/                  # mirror of src/ structure
@@ -330,6 +331,44 @@ Outputs: `customer_segments`, `segment_profiles.csv`, `rule_segment_profiles.csv
 `segmentation_report.json`. As models land, `observed_churn_rate` is replaced by
 the calibrated churn probability.
 
+### 6.3b Churn models — implemented
+
+The `churn_modeling` pipeline builds **multiple temporal cohorts** (monthly
+cutoffs from 2011-03 to 2011-09), each with its own observation features and
+90-day label, and splits them by **time** — never randomly:
+
+```
+train (5 earlier cohorts)  ->  validation (2011-08)  ->  test (2011-09)
+   23,924 rows                    5,117 rows              5,224 rows
+```
+
+Models: **logistic regression, random forest and LightGBM**. The best model by
+validation PR-AUC is calibrated on the validation cohort (isotonic / Platt), and
+calibration is only *applied* if it improves validation calibration. Everything
+is tracked in **MLflow** (`mlruns/`).
+
+Reference result (test cohort):
+
+| Model | ROC-AUC | PR-AUC | Precision | Recall | F1 | Brier |
+| ----- | ------- | ------ | --------- | ------ | -- | ----- |
+| Logistic Regression | 0.802 | 0.817 | — | — | 0.775 | 0.176 |
+| Random Forest | 0.809 | 0.824 | — | — | 0.794 | 0.176 |
+| LightGBM | 0.815 | 0.825 | — | — | 0.796 | 0.174 |
+| **Selected + calibrated (RF)** | 0.809 | 0.816 | 0.730 | 0.871 | 0.794 | 0.177 |
+
+Business: targeting the top 10% by probability captures **15.7% of all
+churners at 90.0% precision (1.57× lift)**. Probability calibration matters here
+because these probabilities are multiplied by CLV downstream; the pipeline
+reports `calibration_applied`, Brier and expected calibration error.
+
+Survival analysis (exploratory): Kaplan–Meier curves by segment plus a Cox
+proportional-hazards model — median time-to-churn 239 days, concordance 0.85,
+with recency increasing and order frequency decreasing churn hazard.
+
+Outputs: `churn_test_predictions`, `churn_feature_importance.csv`,
+`churn_model_metrics.json`, `survival_report.json`, `survival_curves.csv`, and an
+MLflow run.
+
 ### 6.2 Baseline (current company strategy)
 
 A recency rule: *"no purchase for > 90 days ⇒ at risk ⇒ generic retention
@@ -401,8 +440,8 @@ value of prioritisation.
 | 2b | Feature-quality curation (flags, winsorise, grouping) | ✅ done |
 | 3 | Feature engineering + customer feature store | ✅ done |
 | 4 | Recency baseline strategy | ✅ done |
-| 5 | Churn models (LogReg/RF/LightGBM) + calibration | ⏳ next |
-| 6 | CLV model | ⏳ |
+| 5 | Churn models (LogReg/RF/LightGBM) + calibration | ✅ done |
+| 6 | CLV model | ⏳ next |
 | 7 | Segmentation | ✅ done |
 | 8 | Revenue-at-risk + prioritisation engine | ⏳ |
 | 9 | SHAP explainability layer | ⏳ |

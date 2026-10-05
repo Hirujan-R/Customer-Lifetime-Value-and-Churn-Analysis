@@ -121,3 +121,52 @@ segmentation:
     Occasional buyers: "Value-oriented offers and bundles to build habit."
     High-return customers: "Investigate product dissatisfaction; recommend alternatives; review CX."
     Lost customers: "Low-cost win-back; deprioritise unless value is high."
+
+# ---------------------------------------------------------------------------
+# Churn modelling
+# ---------------------------------------------------------------------------
+churn_modeling:
+  # Monthly prediction points; each gets its own observation features + label.
+  cohort_dates:
+    - "2011-03-01"
+    - "2011-04-01"
+    - "2011-05-01"
+    - "2011-06-01"
+    - "2011-07-01"
+    - "2011-08-01"
+    - "2011-09-01"
+  # Time-based split: earlier cohorts train, latest cohorts validate/test.
+  train_cohorts: ["2011-03-01", "2011-04-01", "2011-05-01", "2011-06-01", "2011-07-01"]
+  validation_cohorts: ["2011-08-01"]
+  test_cohorts: ["2011-09-01"]
+  target: "churn"
+  id_columns: ["customer_id", "cohort_date"]
+  categorical_features: ["country_grouped"]
+  exclude_features: ["future_revenue", "future_orders"]
+  models: ["logistic_regression", "random_forest", "lightgbm"]
+  model_params:
+    logistic_regression:
+      max_iter: 2000
+      C: 1.0
+    random_forest:
+      n_estimators: 400
+      min_samples_leaf: 5
+    lightgbm:
+      n_estimators: 400
+      learning_rate: 0.05
+      num_leaves: 31
+      subsample: 0.8
+      colsample_bytree: 0.8
+  calibration_method: "isotonic"
+  random_state: 42
+  survival_features:
+    - recency_days
+    - n_orders
+    - net_revenue
+    - aov
+    - return_value_ratio
+    - avg_interval
+  mlflow:
+    enabled: true
+    tracking_uri: "file:./mlruns"
+    experiment_name: "customer-clv-churn"
