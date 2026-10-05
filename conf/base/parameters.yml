@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Data ingestion parameters
+# ---------------------------------------------------------------------------
+data_ingestion:
+  # Candidate source URLs. The first working source is cached to raw_dir.
+  source_urls:
+    - "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip"
+    - "https://archive.ics.uci.edu/ml/machine-learning-databases/00502/online_retail_II.xlsx"
+  raw_dir: "data/01_raw"
+  raw_filename: "online_retail_II.xlsx"
+  force_download: false
+  download_timeout_seconds: 300
+  # Sheets inside the workbook. Both cover the period Dec 2009 - Dec 2011.
+  sheet_names:
+    - "Year 2009-2010"
+    - "Year 2010-2011"
+
+  cleaning:
+    # Customer-level modelling requires an attributable customer.
+    drop_missing_customer: true
+    # Administrative rows (postage, bank charges, ...) are not products.
+    drop_non_product_stock_codes: true
+    non_product_stock_codes:
+      - "POST"
+      - "D"
+      - "M"
+      - "BANK CHARGES"
+      - "PADS"
+      - "DOT"
+      - "C2"
+      - "CRUK"
+      - "S"
+      - "AMAZONFEE"
+      - "B"
+      - "TEST"
+
+  # Expectations used by the data-quality validation node.
+  expected:
+    min_invoice_date: "2009-12-01"
+    max_invoice_date: "2011-12-31"

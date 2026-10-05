@@ -1,0 +1,117 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "customer_clv_churn"
+version = "0.1.0"
+description = "Customer Lifetime Value & Churn Engine - a decision-support platform for revenue protection."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Hirujan" }]
+dependencies = [
+    # --- Core orchestration -------------------------------------------------
+    "kedro~=1.7.0",
+    "kedro-datasets[pandas]>=4.0",
+    # --- Data wrangling -----------------------------------------------------
+    "pandas>=2.1",
+    "numpy>=1.26,<3.0",
+    "pyarrow>=15.0",
+    "openpyxl>=3.1",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    # --- Modelling ----------------------------------------------------------
+    "scikit-learn>=1.4",
+    "xgboost>=2.0",
+    "lightgbm>=4.3",
+    "shap>=0.45",
+    "numba>=0.60",
+    "llvmlite>=0.42",
+    "lifelines>=0.28",
+    "scipy>=1.11",
+    # --- Experiment tracking & versioning ----------------------------------
+    "mlflow>=2.14",
+    "dvc>=3.50",
+    # --- Serving & dashboard ------------------------------------------------
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "streamlit>=1.36",
+    "plotly>=5.22",
+    # --- Reporting ----------------------------------------------------------
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "jinja2>=3.1",
+]
+
+[project.scripts]
+customer-clv-churn = "customer_clv_churn.__main__:main"
+
+[project.entry-points."kedro.hooks"]
+
+[project.urls]
+Homepage = "https://github.com/Hirujan-R/Customer-Lifetime-Value-and-Churn-Analysis"
+Repository = "https://github.com/Hirujan-R/Customer-Lifetime-Value-and-Churn-Analysis"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-mock>=3.12",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "types-requests",
+    "pre-commit>=3.7",
+    "kedro-viz>=10.0",
+    "ipython>=8.20",
+    "jupyterlab>=4.0",
+    "notebook>=7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[tool.kedro]
+package_name = "customer_clv_churn"
+project_name = "Customer CLV and Churn Engine"
+kedro_init_version = "1.7.0"
+tools = "['Linting', 'Testing', 'Custom Logging', 'Data Structure']"
+example_pipeline = "False"
+source_dir = "src"
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+addopts = "--cov-report term-missing --cov src/customer_clv_churn -ra"
+testpaths = ["tests"]
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
+exclude_lines = ["pragma: no cover", "raise NotImplementedError"]
+
+[tool.ruff]
+line-length = 100
+show-fixes = true
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["F", "W", "E", "I", "UP", "PL", "T201"]
+ignore = ["E501", "PLR0913", "PLR0915", "PLR2004"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+
+[tool.kedro_telemetry]
+project_id = "5088b2b2e866408c8df32c7e33f9c967"

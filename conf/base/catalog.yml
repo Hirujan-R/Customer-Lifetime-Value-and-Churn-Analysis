@@ -1,0 +1,41 @@
+# Data Catalog
+#
+# Medallion-style layout:
+#   data/01_raw         -> immutable downloads (gitignored)
+#   data/02_intermediate-> parsed but not yet cleaned data
+#   data/03_primary     -> cleaned, analysis-ready data
+#   data/08_reporting   -> human-facing reports and summaries
+#
+# Docs: https://docs.kedro.org/en/stable/catalog-data/introduction/
+
+# ---------------------------------------------------------------------------
+# Ingestion
+# ---------------------------------------------------------------------------
+
+# Path to the downloaded Online Retail II workbook (transient, in-memory).
+raw_retail_download_path:
+  type: MemoryDataset
+
+# Raw transaction rows parsed from both yearly sheets.
+transactions_raw:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/02_intermediate/transactions_raw.parquet
+
+# Cleaned, analysis-ready transaction-level dataset.
+transactions:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/03_primary/transactions.parquet
+
+# Data-quality report produced by the validation node.
+data_quality_report:
+  type: kedro_datasets.json.JSONDataset
+  filepath: data/08_reporting/data_quality_report.json
+
+# Monthly business summary for reporting.
+transactions_summary:
+  type: kedro_datasets.pandas.CSVDataset
+  filepath: data/08_reporting/transactions_summary.csv
+  load_args:
+    parse_dates: false
+  save_args:
+    index: false
