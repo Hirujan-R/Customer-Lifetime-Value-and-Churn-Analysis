@@ -145,6 +145,8 @@ Makefile · pyproject.toml · uv.lock
 Five pages: Executive Overview, Customer Segmentation, Churn Risk (per-customer
 SHAP), Revenue Impact (budget slider), Recommended Actions.
 
+![Dashboard — per-customer churn risk and SHAP explanation](docs/images/dashboard_shap_customer.png)
+
 ```bash
 uv sync
 uv run kedro run                                   # build all datasets
