@@ -32,12 +32,9 @@ dependencies = [
     "llvmlite>=0.42",
     "lifelines>=0.28",
     "scipy>=1.11",
-    # --- Experiment tracking & versioning ----------------------------------
+    # --- Experiment tracking ------------------------------------------------
     "mlflow>=2.14",
-    "dvc>=3.50",
-    # --- Serving & dashboard ------------------------------------------------
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.30",
+    # --- Dashboard ----------------------------------------------------------
     "pydantic>=2.7",
     "streamlit>=1.36",
     "plotly>=5.22",

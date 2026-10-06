@@ -4,7 +4,7 @@ An end-to-end decision-support platform that answers one executive question:
 
 > **Which customers are likely to churn, how much future revenue is at risk, why are they likely to churn, and which customers should we prioritise for retention?**
 
-This is built as a production-style ML system — temporal (leakage-safe) features,
+This is an end-to-end analysis — temporal (leakage-safe) features,
 calibrated churn probabilities, CLV, a revenue-at-risk engine, value-weighted
 prioritisation, per-customer explanations, and a C-suite dashboard. The success
 metric is **revenue protected**, not model accuracy.
@@ -113,7 +113,7 @@ only *potential* / *estimated* figures.
 
 Python 3.12 · **Kedro** (orchestration) · **uv** (env) · scikit-learn · LightGBM ·
 XGBoost · **SHAP** · **MLflow** · **Streamlit** + Plotly · lifelines · pandas /
-NumPy · pytest / ruff · Docker · DVC. (FastAPI service and CI are planned.)
+NumPy · pytest / ruff.
 
 ## Project layout
 
@@ -137,7 +137,7 @@ src/customer_clv_churn/
 └── settings.py
 tests/                # mirrors src/ (51 tests)
 docs/images/          # dashboard screenshots
-Makefile · Dockerfile · pyproject.toml · uv.lock
+Makefile · pyproject.toml · uv.lock
 ```
 
 ## Dashboard
@@ -166,7 +166,7 @@ uv run ruff check src tests
 - Observational data: interventions require A/B tests before any causal claim.
 - MNAR missing Customer ID biases customer-level statistics (documented).
 - Revenue-model tail is under-predicted, so totals are conservative.
-- Next: FastAPI inference service, DVC-tracked datasets, Docker/CI hardening, and
-  an IBM Telco (subscription) generalisation study.
+- Next: generalise the framework to a subscription business (IBM Telco) and add
+  A/B-test design for the recommended interventions.
 
 *MIT License.*
